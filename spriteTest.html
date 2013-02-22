@@ -65,16 +65,14 @@
 				scene.fog = new THREE.Fog( 0x000000, 1500, 2100 );
 
 				// create sprites
-
-				var amount = 100;
-				var radius = 1000;
-
+				
+                // スプライトを格納する変数
+                group = new THREE.Object3D();
+                
+                // textureを読み込む
 				var mapA = THREE.ImageUtils.loadTexture( "cars/fit.png", undefined, function() { createHUDSprites() } );
 
-				group = new THREE.Object3D();
-
 				// add 2d-sprites
-
 				var createHUDSprites = function() {
 
 					var scaleX = mapA.image.width;
@@ -82,8 +80,8 @@
 
 					var materialA1 = new THREE.SpriteMaterial( { map: mapA, alignment: THREE.SpriteAlignment.topLeft, opacity: 0.99 } );
 
-					sprite = new THREE.Sprite( materialA1 );
-					sprite.position.set( 50, 50, 0 );
+					var sprite = new THREE.Sprite( materialA1 );
+					sprite.position.set( 200, 200, 0 );
 					sprite.scale.set( scaleX, scaleY, 1 );
 					group.add( sprite );
                     
@@ -139,7 +137,6 @@
 
 					var sprite = group.children[ c ];
 					var material = sprite.material;
-					var scale = Math.sin( time + sprite.position.x * 0.01 ) * 0.3 + 1.0;
 
 					var imageWidth = 1;
 					var imageHeight = 1;
@@ -150,9 +147,18 @@
 						imageHeight = material.map.image.height;
 
 					}
-
+                    
+                    // 位置によって画像サイズを変える
+                    var scale;
+                    if( mouseX > imageWidth/2 ){
+                        scale = 1 - Math.abs(imageWidth - mouseX)/imageWidth;
+                    }else{
+                        scale = 1 - Math.abs(mouseX - imageWidth)/imageWidth;
+                    }
+                    
                     // マウスの位置に移動する
-                    sprite.position.set( mouseX - imageWidth/2 , mouseY - imageHeight/2, 0 );
+                    sprite.position.set( mouseX - imageWidth/2 * scale, mouseY - imageHeight/2 * scale, 0 );
+					sprite.scale.set( scale * imageWidth, scale * imageHeight, 1.0 );
                  
 				}
 
