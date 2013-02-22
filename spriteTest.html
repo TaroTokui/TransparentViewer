@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - sprites</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				background:#fff;
+				padding:0;
+				margin:0;
+				font-weight: bold;
+				overflow:hidden;
+			}
+		</style>
+	</head>
+
+	<body>
+
+		<script src="three.min.js"></script>
+
+		<script src="js/libs/stats.min.js"></script>
+
+		<script>
+
+			var container, stats;
+
+			var camera, scene, renderer;
+
+			var mapC;
+
+			var group;
+			var time = 0;
+
+			var mouseX = 0, mouseY = 0;
+
+			var windowHalfX = window.innerWidth / 2;
+			var windowHalfY = window.innerHeight / 2;
+            
+            
+            // マウスイベント用クラス
+            var MOUSEEVENT = function( down, lastX, lastY )
+            {
+                this.down  = down;      // true:マウスクリックした、false:マウスクリックしていない
+                this.lastX = lastX;     // マウスの現在のX座標
+                this.lastY = lastY;     // マウスの現在のY座標
+            }
+            
+            // マウス入力オブジェクト
+            var MouseBuffer = new MOUSEEVENT( false, 0, 0 );
+            
+			init();
+			animate();
+
+			function init() {
+
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 2100 );
+				camera.position.z = 1500;
+
+				scene = new THREE.Scene();
+
+				scene.fog = new THREE.Fog( 0x000000, 1500, 2100 );
+
+				// create sprites
+
+				var amount = 100;
+				var radius = 1000;
+
+				var mapA = THREE.ImageUtils.loadTexture( "cars/fit.png", undefined, function() { createHUDSprites() } );
+
+				group = new THREE.Object3D();
+
+				// add 2d-sprites
+
+				var createHUDSprites = function() {
+
+					var scaleX = mapA.image.width;
+					var scaleY = mapA.image.height;
+
+					var materialA1 = new THREE.SpriteMaterial( { map: mapA, alignment: THREE.SpriteAlignment.topLeft, opacity: 0.99 } );
+
+					sprite = new THREE.Sprite( materialA1 );
+					sprite.position.set( 50, 50, 0 );
+					sprite.scale.set( scaleX, scaleY, 1 );
+					group.add( sprite );
+                    
+				}
+                
+				scene.add( group );
+
+				// renderer
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.setClearColorHex( 0x000000, 1 );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+				container.appendChild( renderer.domElement );
+
+				window.addEventListener( 'resize', onWindowResize, false );
+                
+                // キーボードイベントを追加
+                document.onkeydown = handleKeyDown;
+                document.onkeyup = handleKeyUp;
+                
+                // マウス入力イベント追加
+                
+                // マウスクリックイベント。マウスクリックイベントははカーソルがcanvas上にあるときのみ発生するようにする。
+                document.onmousedown = handleMouseDown;
+                // マウスクリック解除イベント
+                document.onmouseup = handleMouseUp;
+                // マウスドラックイベント
+                document.onmousemove = handleMouseMove;
+                
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				render();
+
+			}
+
+			function render() {
+
+				for ( var c = 0; c < group.children.length; c ++ ) {
+
+					var sprite = group.children[ c ];
+					var material = sprite.material;
+					var scale = Math.sin( time + sprite.position.x * 0.01 ) * 0.3 + 1.0;
+
+					var imageWidth = 1;
+					var imageHeight = 1;
+
+					if ( material.map && material.map.image && material.map.image.width ) {
+
+						imageWidth = material.map.image.width;
+						imageHeight = material.map.image.height;
+
+					}
+
+                    // マウスの位置に移動する
+                    sprite.position.set( mouseX - imageWidth/2 , mouseY - imageHeight/2, 0 );
+                 
+				}
+
+				renderer.render( scene, camera );
+
+			}
+            var currentlyPressedKeys = Object();
+            
+            //////////////////////////////////////////////////////////////////
+            // ここから入力処理
+            //////////////////////////////////////////////////////////////////
+            
+            // キーボードの入力の処理
+            function handleKeyDown(event) {
+                currentlyPressedKeys[event.keyCode] = true;
+                
+                if (String.fromCharCode(event.keyCode) == "F") {
+                    if( document.body.webkitRequestFullScreen ) {
+                        document.body.style.width = window.screen.width + "px";
+                        document.body.style.height = window.screen.height + "px";
+                        document.body.webkitRequestFullScreen();
+                    }
+                    if( document.body.mozRequestFullScreen ) {
+                        document.body.mozRequestFullScreen();
+                    }
+                }
+            }
+            
+            function handleKeyUp(event) {
+                currentlyPressedKeys[event.keyCode] = false;
+            }
+            
+            // マウスをクリック
+            function handleMouseDown( event )
+            {
+                MouseBuffer.down = true;
+                MouseBuffer.lastX = event.clientX;
+                MouseBuffer.lastY = event.clientY;
+                mouseX = event.clientX;
+                mouseY = event.clientY;
+            }
+            
+            // マウスクリック解除
+            function handleMouseUp( event )
+            {
+                MouseBuffer.down = false;
+            }
+            
+            // マウスドラック
+            function handleMouseMove( event )
+            {
+                // マウスクリックしてないときは何もしない
+                if( !MouseBuffer.down )
+                return;
+                
+                // マウスカーソルの座標
+                var newX = event.clientX;
+                var newY = event.clientY;
+                
+                // マウスカーソルの移動量
+                var deltaX = newX - MouseBuffer.lastX;
+                var deltaY = newY - MouseBuffer.lastY;
+                
+                // マウスの移動距離を計算
+                var len = Math.sqrt( deltaX * deltaX + deltaY * deltaY );
+                
+                // マウスの現在の座標を退避
+                MouseBuffer.lastX = newX
+                MouseBuffer.lastY = newY;
+                
+                mouseX = event.clientX;
+                mouseY = event.clientY;
+            }
+            
+		</script>
+	</body>
+</html>
