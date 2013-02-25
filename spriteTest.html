@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<title>three.js webgl - sprites</title>
+		<title>TransparentViewer</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 		<style>
@@ -37,6 +37,20 @@
 			var windowHalfX = window.innerWidth / 2;
 			var windowHalfY = window.innerHeight / 2;
             
+            // 回転サイズ、1を超えると画面からはみ出るよ
+            var orbitScaleX = 0.9;
+            var orbitScaleY = 0.9;
+            // 画像が回転する軌道の長軸と短軸の長さ
+            var orbitX = windowHalfX * orbitScaleX; // 画面より少し小さく
+            var orbitY = windowHalfY * orbitScaleY;
+            // 画像中心と回転中心のずれ
+            var offsetX = (windowHalfX - orbitX)*2;
+            var offsetY = (windowHalfY - orbitY)*2;
+            // 画像の最小サイズ
+            var minImageSize = 0.1;
+            
+            // 現在の回転角を保持する
+            var theta = 0;
             
             // マウスイベント用クラス
             var MOUSEEVENT = function( down, lastX, lastY )
@@ -149,17 +163,37 @@
 					}
                     
                     // 位置によって画像サイズを変える
-                    var scale;
-                    if( mouseX > imageWidth/2 ){
-                        scale = 1 - Math.abs(imageWidth - mouseX)/imageWidth;
-                    }else{
-                        scale = 1 - Math.abs(mouseX - imageWidth)/imageWidth;
-                    }
+//                    var scale;
+//                    if( mouseX > imageWidth/2 ){
+//                        scale = 1 - Math.abs(imageWidth - mouseX)/imageWidth;
+//                    }else{
+//                        scale = 1 - Math.abs(mouseX - imageWidth)/imageWidth;
+//                    }
+//                    if( mouseY < imageHeight/2){
+//                        scale = 0.1;
+//                    }
+//                    // マウスの位置に移動する
+//                    sprite.position.set( mouseX - imageWidth/2 * scale, mouseY - imageHeight/2 * scale, 0 );
+//					sprite.scale.set( scale * imageWidth, scale * imageHeight, 1.0 );
                     
-                    // マウスの位置に移動する
-                    sprite.position.set( mouseX - imageWidth/2 * scale, mouseY - imageHeight/2 * scale, 0 );
+                    // 角度によって位置とサイズを変える
+                    var scale;
+                    var tmpX, tmpY;
+                    var rad;
+                    rad = theta * Math.PI / 180;
+                    // 位置計算
+                    tmpX = orbitX * ( Math.sin(rad) + 1.0 ) + offsetX;
+                    tmpY = orbitY * ( Math.cos(rad) + 1.0 ) + offsetY;
+                    // サイズ計算
+                    if( 90 < theta && theta < 270 ){
+                        scale = minImageSize;
+                    }else{
+                        scale = Math.abs( (1.0-minImageSize) * Math.cos(rad) + minImageSize );
+                    }
+                    // 位置とサイズをセット
 					sprite.scale.set( scale * imageWidth, scale * imageHeight, 1.0 );
-                 
+                    sprite.position.set( tmpX - imageWidth/2 * scale, tmpY - imageHeight/2 * scale, 0 );
+
 				}
 
 				renderer.render( scene, camera );
@@ -224,6 +258,11 @@
                 
                 // マウスの移動距離を計算
                 var len = Math.sqrt( deltaX * deltaX + deltaY * deltaY );
+                
+                // 回転させる
+                theta += deltaX;
+                if( theta > 360 ) theta = 0;
+                if( theta < 0 ) theta = 360;
                 
                 // マウスの現在の座標を退避
                 MouseBuffer.lastX = newX
