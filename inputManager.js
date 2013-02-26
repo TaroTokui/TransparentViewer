@@ -36,10 +36,8 @@ InputManager.prototype.getMoveX = function(){
     if( len == 1 ){
         if( mode == 1 ){
             var x = tuio.cursors[0].x * window.innerWidth;
-            diff = (x - preX)/2;
+            diff = (x - preX)/30;
             preX = x;
-            if( theta > 360 ) theta = 0;
-            if( theta < 0 ) theta = 360;
         }else if( mode == 0 ){
             mode = 1;
             var x = tuio.cursors[0].x * window.innerWidth;

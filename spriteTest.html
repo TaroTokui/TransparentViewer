@@ -19,45 +19,29 @@
 	<body>
 
 		<script src="three.min.js"></script>
-
         <script src="tuio.js"></script>
-        
         <script src="inputManager.js"></script>
+        <script src="spriteObject.js"></script>
         
 		<script>
 
 			var container;
-
 			var camera, scene, renderer;
 
-			var group;
-
-			var windowHalfX = window.innerWidth / 2;
-			var windowHalfY = window.innerHeight / 2;
-            
-            // 回転サイズ、1を超えると画面からはみ出るよ
-            var orbitScaleX = 0.9;
-            var orbitScaleY = 0.9;
-            // 画像が回転する軌道の長軸と短軸の長さ
-            var orbitX = windowHalfX * orbitScaleX; // 画面より少し小さく
-            var orbitY = windowHalfY * orbitScaleY;
-            // 画像中心と回転中心のずれ
-            var offsetX = (windowHalfX - orbitX);
-            var offsetY = (windowHalfY - orbitY);
-            // 画像の最小サイズ
-            var minImageSize = 0.1;
-            
-            // 現在の回転角を保持する
-            var theta = 0;
-            
             // 入力を処理するクラス
             var inputManager;
+            
+            // スプライトを管理クラス
+            var sprites;
             
 			init();
 			animate();
 
 			function init() {
-
+                
+                //================================================================
+                // three.js関係の初期化
+                //================================================================
 				container = document.createElement( 'div' );
 				document.body.appendChild( container );
 
@@ -68,87 +52,40 @@
                 // sceneの設定
 				scene = new THREE.Scene();
 				scene.fog = new THREE.Fog( 0x000000, 1500, 2100 );
-
-				// create sprites
-				
-                // スプライトを格納する変数
-                group = new THREE.Object3D();
                 
-                // textureを読み込む
-				var mapA = THREE.ImageUtils.loadTexture( "cars/fit.png", undefined, function() { createHUDSprites() } );
-
-				// add 2d-sprites
-				var createHUDSprites = function() {
-
-					var scaleX = mapA.image.width;
-					var scaleY = mapA.image.height;
-
-					var materialA1 = new THREE.SpriteMaterial( { map: mapA, alignment: THREE.SpriteAlignment.center, opacity: 0.99 } );
-
-					var sprite = new THREE.Sprite( materialA1 );
-					sprite.position.set( 200, 200, 0 );
-					sprite.scale.set( scaleX, scaleY, 1 );
-					group.add( sprite );
-                    
-				}
-                
-				scene.add( group );
-
-				// renderer
+				// rendererの初期化
 				renderer = new THREE.WebGLRenderer();
 				renderer.setClearColorHex( 0x000000, 1 );
 				renderer.setSize( window.innerWidth, window.innerHeight );
 				container.appendChild( renderer.domElement );
 				window.addEventListener( 'resize', onWindowResize, false );
                 
+                
+                //================================================================
+                // クラスの初期化
+                //================================================================
+                
                 // 入力を処理するオブジェクト
                 inputManager = new InputManager();
                 inputManager.setup();
                 
+                // textureを読み込む(将来的にはフォルダごと渡す)
+                sprites = new SpriteObject();
+                sprites.setup();
+                sprites.addImage("cars/fit.png");
+                for( i=0; i<6; i++){
+                    sprites.addImage("cars/me_s.png");
+                }
+                
+                
+				scene.add( sprites.getSprites() );
+
 			}
 
             function update(){
                 
-                // group内の全てのオブジェクトの情報を更新する
-				for ( var c = 0; c < group.children.length; c ++ ) {
-                    
-					var sprite = group.children[ c ];
-					var material = sprite.material;
-                    
-					var imageWidth = 1;
-					var imageHeight = 1;
-                    
-					if ( material.map && material.map.image && material.map.image.width ) {
-                        
-						imageWidth = material.map.image.width;
-						imageHeight = material.map.image.height;
-                        
-					}
-                    
-                    // TUIOから値を取得
-                    theta += inputManager.getMoveX();
-                    
-                    // 角度によって位置とサイズを変える
-                    var scale;
-                    var tmpX, tmpY;
-                    var rad;
-                    rad = theta * Math.PI / 180;
-                    // 位置計算
-                    tmpX = orbitX * ( Math.sin(rad) + 1.0 ) + offsetX;
-                    tmpY = orbitY * ( Math.cos(rad) + 1.0 ) + offsetY;
-                    // サイズ計算
-                    if( 90 < theta && theta < 270 ){
-                        scale = minImageSize;
-                    }else{
-                        scale = Math.abs( (1.0-minImageSize) * Math.cos(rad) + minImageSize );
-                    }
-                    // 位置とサイズをセット
-					sprite.scale.set( scale * imageWidth, scale * imageHeight, 1.0 );
-                    //sprite.position.set( tmpX - imageWidth/2 * scale, tmpY - imageHeight/2 * scale, 0 );
-                    sprite.position.set( tmpX, tmpY, 0 );
-                    
-				}
-
+                sprites.update( inputManager.getMoveX() );
+                
             }
             
 			function onWindowResize() {
@@ -163,14 +100,7 @@
 			function animate() {
 
 				requestAnimationFrame( animate );
-
                 update();
-				render();
-
-			}
-
-			function render() {
-
 				renderer.render( scene, camera );
 
 			}
